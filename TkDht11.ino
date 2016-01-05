@@ -1,9 +1,4 @@
-// TkDht11.ino; use with TkDht11.cpp and TkDht11.h
-// Thanks to the work of :
-// MIT license
-// written by Adafruit Industries
-// modified for Spark Core by RussGrue
-
+// This #include statement was automatically added by the Particle IDE.
 #include "tkdht11.h"
 
 
@@ -25,10 +20,11 @@
 // publishme.ino -- Spark Publishing Time and DHT 
 unsigned long lastTime = 0UL;
 char publishStringTimeDht[63];
-unsigned DhtTemp;
-unsigned DhtHumid;
-unsigned DhtCelvin;
-
+unsigned int VDhtTemp;
+unsigned int VDhtHumid;
+unsigned int VDhtCelvin;
+unsigned int VDhtFarenh;
+unsigned int VDhtHeati;
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -41,9 +37,9 @@ void setup() {
 
 void loop() {
 // Wait a few seconds between measurements.
-//	delay(2000); // because it is used a timing in the loop for pushing data in the cloud
+//	delay(2000);
 
-//Time every 15 second, will published up in the cloud with the real time data of Humid, Temp (C) and Celvin
+//Time every 15 second
 
     unsigned long now = millis();
     //Every 15 seconds publish uptime
@@ -54,7 +50,7 @@ void loop() {
         unsigned sec = nowSec%60;
         unsigned min = (nowSec%3600)/60;
         unsigned hours = (nowSec%86400)/3600;
-        sprintf(publishStringTimeDht,"%u:%u:%u: \Humid =\%u ;\Temp (C) =\%u ; \Celvin =\%u",hours,min,sec,DhtHumid,DhtTemp,DhtCelvin);
+        sprintf(publishStringTimeDht,"%u:%u:%u: \RF =\%u ;\T (C) =\%u ; \T (K) =\%u",hours,min,sec,VDhtHumid,VDhtTemp,VDhtCelvin);
         Spark.publish("TimeDHT",publishStringTimeDht);
         }
 // Reading temperature or humidity takes about 250 milliseconds!
@@ -75,30 +71,30 @@ void loop() {
 
 // Compute heat index
 // Must send in temp in Fahrenheit!
-//SerialPrint and picking the data for publishing on the cloud
 	float hi = dht.getHeatIndex();
 	float dp = dht.getDewPoint();
 	float k = dht.getTempKelvin();
 
 	Serial.print("Humid: "); 
 	Serial.print(h);
-	DhtHumid = (h);
+	VDhtHumid = (h);
 	Serial.print("% - ");
 	Serial.print("Temp: "); 
 	Serial.print(t);
-	DhtTemp = (t);
+	VDhtTemp = (t);
 	Serial.print("*C ");
 	Serial.print(f);
+	VDhtFarenh = (f);
 	Serial.print("*F ");
 	Serial.print(k);
-	//There are a prblem with getting DhtCelvin = (k), which is "0", I'll work on it
-	DhtCelvin = (k);
+	VDhtCelvin = (k);
 	Serial.print("*K - ");
 	Serial.print("DewP: ");
 	Serial.print(dp);
 	Serial.print("*C - ");
 	Serial.print("HeatI: ");
 	Serial.print(hi);
+	VDhtHeati = (hi);
 	Serial.println("*C");
 	Serial.println(Time.timeStr());
 }

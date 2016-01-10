@@ -1,4 +1,7 @@
 // This #include statement was automatically added by the Particle IDE.
+#include "HttpClient/HttpClient.h"
+
+// This #include statement was automatically added by the Particle IDE.
 #include "tkdht11.h"
 
 
@@ -27,18 +30,34 @@ unsigned int VDhtFarenh;
 unsigned int VDhtHeati;
 
 DHT dht(DHTPIN, DHTTYPE);
+// Value ID's for www.ubidots.com to show the data
+#define VARIABLE_ID01 "put here your ID which you have set in ubidots for variable 01"// HUMID
+#define VARIABLE_ID02 "put here your ID which you have set in ubidots for variable 01"// Temp
+#define VARIABLE_ID03 "put here your ID which you have set in ubidots for variable 01"// Celvin
+#define TOKEN "put here your TOKEN which you have got while settings in ubidots for the token"
+
+    HttpClient http;
+
+    // Headers currently need to be set at init, useful for API keys etc.
+    http_header_t headers[] = {
+        { "Content-Type", "application/json" },
+        { NULL, NULL } // NOTE: Always terminate headers will NULL
+    };
+
+    http_request_t request;
+    http_response_t response;
 
 void setup() {
 	Serial.begin(9600); 
 	Serial.println("DHTxx test!");
-
-	dht.begin();
+    dht.begin();
+    request.hostname = "things.ubidots.com";
+    request.port = 80;
+   // request.path = "/api/v1.6/variables/"VARIABLE_ID02"/values?token="TOKEN;
 }
 
 void loop() {
 // Wait a few seconds between measurements.
-//	delay(2000);
-
 //Time every 15 second
 
     unsigned long now = millis();
@@ -50,8 +69,31 @@ void loop() {
         unsigned sec = nowSec%60;
         unsigned min = (nowSec%3600)/60;
         unsigned hours = (nowSec%86400)/3600;
-        sprintf(publishStringTimeDht,"%u:%u:%u: \RF =\%u ;\T (C) =\%u ; \T (K) =\%u",hours,min,sec,VDhtHumid,VDhtTemp,VDhtCelvin);
+        sprintf(publishStringTimeDht,"%u:%u:%u: \RF =\%u  ;\T (C) =\%u ; \T (K) =\%u",hours,min,sec,VDhtHumid,VDhtTemp,VDhtCelvin);
         Spark.publish("TimeDHT",publishStringTimeDht);
+        
+        //ubidots, your can sign in www.ubidots.com, it's free of charts
+        // Send sensor value (Humid RF, Temp (C), Celvin(K) for e.g.
+
+        Serial.println("Sending data ...");
+	// first value to send to ubidots
+        request.path = "/api/v1.6/variables/"VARIABLE_ID01"/values?token="TOKEN;
+  
+        request.body = "{\"value\":" + String(VDhtHumid) + "}";        
+        // second value to send to ubidots
+        request.path = "/api/v1.6/variables/"VARIABLE_ID02"/values?token="TOKEN;
+
+        request.body = "{\"value\":" + String(VDhtTemp) + "}";
+	// third value to send to ubidots
+        request.path = "/api/v1.6/variables/"VARIABLE_ID03"/values?token="TOKEN;
+
+        request.body = "{\"value\":" + String(VDhtCelvin) + "}";
+
+        // Post request
+        http.post(request, response, headers);
+        Serial.println(response.status);
+        Serial.println(response.body);
+
         }
 // Reading temperature or humidity takes about 250 milliseconds!
 //getDHT()
@@ -68,6 +110,8 @@ void loop() {
 		Serial.println("Failed to read from DHT sensor!");
 		return;
 	}
+// Delay auf 2 min
+//delay(120000);
 
 // Compute heat index
 // Must send in temp in Fahrenheit!
@@ -97,4 +141,5 @@ void loop() {
 	VDhtHeati = (hi);
 	Serial.println("*C");
 	Serial.println(Time.timeStr());
+
 }
